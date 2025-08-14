@@ -5,53 +5,44 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/pranav244872/lenslocked.com/views"
 )
+
+var homeView *views.View
+var contactView *views.View
+var faqView *views.View
+
+//////////////////////////////////////////////////////////////////////////
+// Helper functions
+//////////////////////////////////////////////////////////////////////////
+
+// A helper function that panics on any error
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Handlers
+//////////////////////////////////////////////////////////////////////////
 
 // home page handler
 func home(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, "<h1>Welcome to my awesome site!</h1>")
+	must(homeView.Render(w, nil))
 }
 
 // contact page handler
 func contact(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, "To get in touch, please send an email "+
-		"to <a href=\"mailto:support@lenslocked.com\">"+
-		"support@lenslocked.com</a>.")
+	must(contactView.Render(w, nil))
 }
 
 // faq page handler
 func faq(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, `<h1>Frequently Asked Questions (Shhh... it’s a secret!)</h1>
-
-<details>
-  <summary>Q: Why did the chicken cross the road?</summary>
-  <p>A: To get to the other side... of this website! 🐔</p>
-</details>
-
-<details>
-  <summary>Q: Can I have unlimited coffee while coding?</summary>
-  <p>Sure! But remember: too much caffeine may cause spontaneous bug fixing at 3 AM.</p>
-</details>
-
-<details>
-  <summary>Q: What\’s the meaning of life, the universe, and everything?</summary>
-  <p>42. But don\’t quote me on that — I’m just a website.</p>
-</details>
-
-<details>
-  <summary>Q: How do I unlock the secret mode?</summary>
-  <p class="secret">Try typing <code>sudo make me a sandwich</code> in your terminal. No guarantees!</p>
-</details>
-
-<details>
-  <summary>Q: Can you tell me a joke?</summary>
-  <p>Why do programmers prefer dark mode? Because light attracts bugs! 🐞</p>
-</details>
-`)
-
+	must(faqView.Render(w, nil))
 }
 
 // 404 page
@@ -60,11 +51,23 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "<h1>Oops! This page does not exist 🛸</h1>")
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Main routing
+//////////////////////////////////////////////////////////////////////////
+
 func main() {
+	homeView = views.NewView("main", "views/home.gohtml")
+	contactView = views.NewView("main", "views/contact.gohtml")
+	faqView = views.NewView("main", "views/faq.gohtml")
+
 	r := mux.NewRouter()
+
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	r.HandleFunc("/", home)
 	r.HandleFunc("/contact", contact)
 	r.HandleFunc("/faq", faq)
+
 	r.NotFoundHandler = http.HandlerFunc(notFound)
+
 	http.ListenAndServe(":3000", r)
 }
