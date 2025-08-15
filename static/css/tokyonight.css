@@ -142,6 +142,55 @@ button:hover {
 }
 
 /* ========================================================
+   ❓ FAQ <details> Section
+   ======================================================== */
+
+.custom-form {
+  background-color: var(--bg-dark);
+  border-radius: 8px;
+  max-width: 500px;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--fg);
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.5rem;
+  background-color: var(--bg);
+  border: 1px solid var(--accent-blue);
+  border-radius: 4px;
+  color: var(--fg);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 2px rgba(125, 207, 255, 0.3);
+}
+
+.form-button {
+  background-color: var(--accent-blue);
+  color: var(--bg-dark);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.form-button:hover {
+  background-color: var(--accent-cyan);
+}
+
+/* ========================================================
    🧮 Code Blocks
    ======================================================== */
 code {
