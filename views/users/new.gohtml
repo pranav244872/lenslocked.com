@@ -2,6 +2,11 @@
 <h1>Sign Up!</h1>
 <form class="custom-form" action="/signup" method="POST">
   <div class="form-group">
+    <label for="name">Full Name</label>
+    <input type="text" id="name" name="name" class="form-input" placeholder="Full Name">
+  </div>
+
+  <div class="form-group">
     <label for="email">Email address</label>
     <input type="email" id="email" name="email" class="form-input" placeholder="Email">
   </div>
@@ -9,6 +14,11 @@
   <div class="form-group">
     <label for="password">Password</label>
     <input type="password" id="password" name="password" class="form-input" placeholder="Password">
+  </div>
+
+  <div class="form-group">
+    <label for="dob">Date of Birth</label>
+    <input type="date" id="dob" name="dob" class="form-input" max="{{.MaxDOB}}" min="{{.MinDOB}}">
   </div>
 
   <button type="submit" class="form-button">Sign Up</button>
