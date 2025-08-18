@@ -1,0 +1,15 @@
+body {
+  background-color: var(--bg-dark);
+  color: var(--fg);
+  font-family: 'Roboto', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+main {
+  padding: 2rem;
+}
+
+h1 {
+  color: var(--accent-yellow);
+}

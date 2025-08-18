@@ -1,0 +1,26 @@
+{{define "content"}}
+<div class="custom-login-container">
+  <div class="custom-login-panel">
+    <div class="custom-login-header">
+      <h3 class="custom-login-title">Welcome Back!</h3>
+    </div>
+    <div class="custom-login-body">
+      {{template "loginForm"}}
+    </div>
+  </div>
+</div>
+{{end}}
+
+{{define "loginForm"}}
+<form action="/login" method="POST" class="custom-login-form">
+  <div class="custom-form-group">
+    <label for="email" class="custom-form-label">Email address</label>
+    <input type="email" name="email" id="email" class="custom-form-input" placeholder="Email">
+  </div>
+  <div class="custom-form-group">
+    <label for="password" class="custom-form-label">Password</label>
+    <input type="password" name="password" id="password" class="custom-form-input" placeholder="Password">
+  </div>
+  <button type="submit" class="custom-login-button">Log In</button>
+</form>
+{{end}}

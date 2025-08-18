@@ -1,0 +1,14 @@
+/* Tokyo-Night Theme Variables */
+:root {
+  --bg-dark: #1a1b26;
+  --bg: #24283b;
+  --fg: #c0caf5;
+  --fg-muted: #a9b1d6;
+
+  --accent-magenta: #bb9af7;
+  --accent-blue: #7aa2f7;
+  --accent-cyan: #7dcfff;
+  --accent-green: #73daca;
+  --accent-yellow: #e0af68;
+  --accent-orange: #ff9e64;
+}

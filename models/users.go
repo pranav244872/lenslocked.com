@@ -4,6 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/pranav244872/lenslocked.com/config"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -14,8 +16,9 @@ import (
 ///////////////////////////////////////////////////////////////////////////////
 
 var (
-	ErrorNotFound  = errors.New("models: resource not found")
-	ErrorInvalidId = errors.New("models: ID provided was invalid")
+	ErrorNotFound        = errors.New("models: resource not found")
+	ErrorInvalidId       = errors.New("models: ID provided was invalid")
+	ErrorInvalidPassword = errors.New("models: incorrect password provided")
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -23,13 +26,15 @@ var (
 ///////////////////////////////////////////////////////////////////////////////
 
 type User struct {
-	ID        int64 `gorm:"primaryKey;autoIncrement"`
-	Name      string
-	Email     string    `gorm:"not null;uniqueIndex"`
-	DOB       time.Time `gorm:"not null;check:dob <= CURRENT_DATE - INTERVAL '18 years' AND dob >= CURRENT_DATE - INTERVAL '150 years'"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	ID           int64 `gorm:"primaryKey;autoIncrement"`
+	Name         string
+	Email        string    `gorm:"not null;uniqueIndex"`
+	Password     string    `gorm:"-"`
+	PasswordHash string    `gorm:"not null"`
+	DOB          time.Time `gorm:"not null;check:dob <= CURRENT_DATE - INTERVAL '18 years' AND dob >= CURRENT_DATE - INTERVAL '150 years'"`
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
 }
 
 // User Service, through which we will interact with the users table
@@ -84,6 +89,18 @@ func (us *UserService) DestructiveReset() error {
 
 // Create user
 func (us *UserService) Create(user *User) error {
+	// hash the password
+	pwBytes := []byte(user.Password + config.PassPepper)
+	hashedBytes, err := bcrypt.GenerateFromPassword(pwBytes, bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	// store hash password in struct
+	user.PasswordHash = string(hashedBytes)
+	user.Password = ""
+
+	// create db entry
 	return us.db.Create(user).Error
 }
 
@@ -171,6 +188,29 @@ func (us *UserService) Delete(id int64) error {
 	}
 
 	return nil
+}
+
+// Authenticate
+func (us *UserService) Authenticate(email, password string) (*User, error) {
+	foundUser, err := us.ByEmail(email)
+	if err != nil {
+		// Includes ErrorNotFound
+		return nil, err
+	}
+
+	err = bcrypt.CompareHashAndPassword(
+		[]byte(foundUser.PasswordHash),
+		[]byte(password+config.PassPepper),
+	)
+
+	switch err {
+	case nil:
+		return foundUser, nil
+	case bcrypt.ErrMismatchedHashAndPassword:
+		return nil, ErrorInvalidPassword
+	default:
+		return nil, err
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

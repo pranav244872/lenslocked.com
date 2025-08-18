@@ -8,15 +8,22 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// loads the env variables from .env file
+var (
+	PassPepper string
+)
+
+// LoadEnv loads the environment variables from a .env file and sets up global variables.
 func LoadEnv() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("No .env file found, relying on environment variables")
+		log.Println("No .env file found, relying on system environment variables")
 	}
+
+	// Set global variables
+	PassPepper = os.Getenv("PASS_PEPPER")
 }
 
-// constructs the db connection string from env variables
+// GetDSN constructs the database connection string from environment variables.
 func GetDSN() string {
 	host := os.Getenv("DB_HOST")
 	port := os.Getenv("DB_PORT")
