@@ -1,13 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/pranav244872/lenslocked.com/config"
 	"github.com/pranav244872/lenslocked.com/controllers"
@@ -23,12 +23,6 @@ func must(err error) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-// notFound is a 404 handler
-func notFound(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotFound)
-	fmt.Fprint(w, "<h1>Oops! This page does not exist 🛸</h1>")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -51,40 +45,28 @@ func main() {
 	}()
 
 	log.Println("Database connected")
-
 	// Auto-migrate schema
 	must(userService.DestructiveReset())
 
 	// Controllers
-	staticC := controllers.NewStatic()
 	usersC := controllers.NewUsers(userService)
 
 	// Router
 	r := mux.NewRouter()
 
-	// Static assets
-	r.PathPrefix("/static/").Handler(
-		http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))),
-	)
-
-	// Static pages
-	r.Handle("/", staticC.Home).Methods("GET")
-	r.Handle("/contact", staticC.Contact).Methods("GET")
-	r.Handle("/faq", staticC.FAQ).Methods("GET")
-
 	// User routes
-	r.HandleFunc("/signup", usersC.New).Methods("GET")
-	r.HandleFunc("/signup", usersC.Create).Methods("POST")
-	r.Handle("/login", usersC.LoginView).Methods("GET")
-	r.HandleFunc("/login", usersC.Login).Methods("POST")
+	r.HandleFunc("/api/signup", usersC.Create).Methods("POST")
+	r.HandleFunc("/api/login", usersC.Login).Methods("POST")
 
-	// 404
-	r.NotFoundHandler = http.HandlerFunc(notFound)
+	// CORS configuration
+	allowedOrigins := handlers.AllowedOrigins([]string{"http://localhost:5173"})
+	allowedMethods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
+	allowedHeaders := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"})
 
 	// Graceful shutdown
 	go func() {
 		log.Println("Server starting on :3000")
-		if err := http.ListenAndServe(":3000", r); err != nil && err != http.ErrServerClosed {
+		if err := http.ListenAndServe(":3000", handlers.CORS(allowedOrigins, allowedMethods, allowedHeaders)(r)); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Could not start server: %v", err)
 		}
 	}()
