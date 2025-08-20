@@ -8,17 +8,25 @@ import (
 	"github.com/pranav244872/lenslocked.com/models"
 )
 
-// users controller
+///////////////////////////////////////////////////////////////////////////////
+// Users Controller
+///////////////////////////////////////////////////////////////////////////////
+
+// Users controller struct to handle user-related routes
 type Users struct {
 	UserService *models.UserService
 }
 
-// constructor for users struct
+// Constructor for Users controller
 func NewUsers(us *models.UserService) *Users {
 	return &Users{
 		UserService: us,
 	}
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// User Signup
+///////////////////////////////////////////////////////////////////////////////
 
 // SignupForm defines the expected JSON structure for a new user signup
 type SignupForm struct {
@@ -55,11 +63,15 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send a sucess response
+	// Send a success response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"message": "User Created successfully!"})
+	json.NewEncoder(w).Encode(map[string]string{"message": "User created successfully!"})
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// User Login
+///////////////////////////////////////////////////////////////////////////////
 
 // LoginForm defines the expected JSON structure for user login
 type LoginForm struct {
@@ -86,8 +98,27 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// On successful authentication, we would typically generate and return a JWT
-	// For now, we'll just return the user's data
+	// Set the login cookie
+	cookie := http.Cookie{
+		Name:     "email",
+		Value:    user.Email,
+		SameSite: http.SameSiteNoneMode, // Required for cross-origin
+		Secure:   true,                  // Required when SameSite=None
+		// Optional: Path, HttpOnly, MaxAge, etc.
+	}
+	http.SetCookie(w, &cookie)
+
+	// Respond with user data (or token, in a real app)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
+}
+
+func (u *Users) CookieTest(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("email")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"email": cookie.Value})
 }

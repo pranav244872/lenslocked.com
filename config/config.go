@@ -9,7 +9,12 @@ import (
 )
 
 var (
-	PassPepper string
+	PassPepper   string
+	ClientOrigin string
+	CertFile     string
+	KeyFile      string
+	ServerPort   string
+	ServerHost   string
 )
 
 // LoadEnv loads the environment variables from a .env file and sets up global variables.
@@ -21,6 +26,11 @@ func LoadEnv() {
 
 	// Set global variables
 	PassPepper = os.Getenv("PASS_PEPPER")
+	ClientOrigin = os.Getenv("CLIENT_ORIGIN")
+	CertFile = os.Getenv("CERT_FILE_PATH")
+	KeyFile = os.Getenv("KEY_FILE_PATH")
+	ServerPort = os.Getenv("SERVER_PORT")
+	ServerHost = os.Getenv("SERVER_HOST")
 }
 
 // GetDSN constructs the database connection string from environment variables.
