@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
-	"time"
 
 	"github.com/pranav244872/lenslocked.com/models"
 )
@@ -14,11 +14,11 @@ import (
 
 // Users controller struct to handle user-related routes
 type Users struct {
-	UserService *models.UserService
+	UserService models.UserService
 }
 
 // Constructor for Users controller
-func NewUsers(us *models.UserService) *Users {
+func NewUsers(us models.UserService) *Users {
 	return &Users{
 		UserService: us,
 	}
@@ -32,11 +32,10 @@ func NewUsers(us *models.UserService) *Users {
 type SignupForm struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
-	Dob      string `json:"dob"`
 	Password string `json:"password"`
 }
 
-// Create handles the user signup process
+// Create handles the user signup process and it automatically logs the user in
 // It expects a JSON payload and returns a JSON response
 func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 	var form SignupForm
@@ -45,28 +44,32 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dob, err := time.Parse("2006-01-02", form.Dob)
-	if err != nil {
-		http.Error(w, "Invalid date format", http.StatusBadRequest)
-		return
-	}
-
 	user := models.User{
 		Name:     form.Name,
 		Email:    form.Email,
 		Password: form.Password,
-		DOB:      dob,
 	}
 
-	if err := u.UserService.Create(&user); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := u.UserService.DB.Create(&user); err != nil {
+		// Check for the specific error for a duplicate email.
+		if errors.Is(err, models.ErrorEmailTaken) {
+			http.Error(w, err.Error(), http.StatusConflict) // 409 Conflict
+			return
+		}
+
+		http.Error(w, err.Error(), http.StatusBadRequest) // 400 Bad Request
 		return
 	}
 
-	// Send a success response
+	// automatically sign the user in after they create an account
+	if err := u.signIn(w, &user); err != nil {
+		http.Error(w, "Something went wrong during sign-in", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"message": "User created successfully!"})
+	json.NewEncoder(w).Encode(map[string]string{"message": "User created and logged in successfully!"})
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -89,8 +92,9 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := u.UserService.Authenticate(form.Email, form.Password)
 	if err != nil {
+		// 3. Relay the Result
 		switch err {
-		case models.ErrorNotFound:
+		case models.ErrorNotFound, models.ErrorIncorrectPassword:
 			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		default:
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
@@ -98,27 +102,52 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set the login cookie
-	cookie := http.Cookie{
-		Name:     "email",
-		Value:    user.Email,
-		SameSite: http.SameSiteNoneMode, // Required for cross-origin
-		Secure:   true,                  // Required when SameSite=None
-		// Optional: Path, HttpOnly, MaxAge, etc.
+	if err := u.signIn(w, user); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	http.SetCookie(w, &cookie)
 
 	// Respond with user data (or token, in a real app)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "Login successful!"})
+}
+
+// CookieTest acts as a protected endpoint to verify a user's session.
+func (u *Users) CookieTest(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("remember_token")
+	if err != nil {
+		http.Error(w, "Authentication required", http.StatusUnauthorized)
+		return
+	}
+
+	user, err := u.UserService.DB.ByRememberToken(cookie.Value)
+	if err != nil {
+		http.Error(w, "Invalid session token", http.StatusUnauthorized)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
 }
 
-func (u *Users) CookieTest(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("email")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+///////////////////////////////////////////////////////////////////////////////
+// Helper functions
+///////////////////////////////////////////////////////////////////////////////
+
+// signIn helper function sign in users via cookies
+func (u *Users) signIn(w http.ResponseWriter, user *models.User) error {
+	if err := u.UserService.DB.Update(user); err != nil {
+		return err
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"email": cookie.Value})
+
+	cookie := http.Cookie{
+		Name:     "remember_token",
+		Value:    user.Remember,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
+	}
+
+	http.SetCookie(w, &cookie)
+	return nil
 }

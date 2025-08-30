@@ -15,6 +15,7 @@ var (
 	KeyFile      string
 	ServerPort   string
 	ServerHost   string
+	HMACKey      string
 )
 
 // LoadEnv loads the environment variables from a .env file and sets up global variables.
@@ -31,6 +32,7 @@ func LoadEnv() {
 	KeyFile = os.Getenv("KEY_FILE_PATH")
 	ServerPort = os.Getenv("SERVER_PORT")
 	ServerHost = os.Getenv("SERVER_HOST")
+	HMACKey = os.Getenv("HMAC_KEY")
 }
 
 // GetDSN constructs the database connection string from environment variables.
