@@ -39,14 +39,14 @@ func main() {
 	must(err)
 	defer func() {
 		log.Println("Closing database connection...")
-		if err := userService.Close(); err != nil {
+		if err := userService.DB.Close(); err != nil {
 			log.Printf("Error closing DB: %v", err)
 		}
 	}()
 
 	log.Println("Database connected")
 	// Auto-migrate schema
-	must(userService.AutoMigrate())
+	must(userService.DB.AutoMigrate())
 
 	// Controllers
 	usersC := controllers.NewUsers(userService)

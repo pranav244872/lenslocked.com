@@ -14,11 +14,11 @@ import (
 
 // Users controller struct to handle user-related routes
 type Users struct {
-	UserService models.UserService
+	UserService *models.UserService
 }
 
 // Constructor for Users controller
-func NewUsers(us models.UserService) *Users {
+func NewUsers(us *models.UserService) *Users {
 	return &Users{
 		UserService: us,
 	}
@@ -112,6 +112,16 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Login successful!"})
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// User Cookie Test
+///////////////////////////////////////////////////////////////////////////////
+
+type UserResponse struct {
+	ID    int64  `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
 // CookieTest acts as a protected endpoint to verify a user's session.
 func (u *Users) CookieTest(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("remember_token")
@@ -126,8 +136,14 @@ func (u *Users) CookieTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	response := UserResponse{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	json.NewEncoder(w).Encode(response)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
